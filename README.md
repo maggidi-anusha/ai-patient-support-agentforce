@@ -85,6 +85,7 @@ Appointment Requests
 
 # Architecture
 
+```text
 Medical Report Created
         ↓
 Gemini API Analysis
@@ -102,7 +103,7 @@ Analysis Date Stored
 Appointment Request Created
         ↓
 Dashboard Updated
-
+```
 
 # Workflow
 1. User creates a Medical Report.
@@ -146,6 +147,7 @@ Solution : Used proper target org configuration and corrected retrieval commands
 # Project Structure
 ai-patient-support-agentforce
 
+```text
 ├── force-app/              # Salesforce metadata and source code
 ├── screenshots/            # Project screenshots
 ├── scripts/                # Utility scripts
@@ -155,6 +157,7 @@ ai-patient-support-agentforce
 ├── interview-notes.txt     # Interview preparation notes
 ├── package.xml
 └── sfdx-project.json
+```
 
 # Project Screenshots
 
