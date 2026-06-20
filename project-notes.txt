@@ -1,0 +1,15 @@
+AI Patient Support & Medical Report Simplifier | Salesforce + Apex + Gemini API
+
+• Developed an AI-powered Salesforce application to simplify medical reports and automate healthcare workflows.
+
+• Integrated Google's Gemini API using Apex HTTP callouts and JSON deserialization.
+
+• Built custom objects including Patient, Medical Report, and Appointment Request.
+
+• Implemented urgency classification and automated appointment creation for critical cases.
+
+• Designed reports, dashboards, and list views for monitoring patient data.
+
+• Added duplicate prevention logic, exception handling, and test classes to improve reliability.
+
+• Used Git and GitHub for version control and project management.
