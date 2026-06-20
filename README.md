@@ -7,81 +7,81 @@ This project aims to bridge that gap by leveraging Artificial Intelligence to si
 
 # Solution
 The application integrates Salesforce with Google's Gemini API to:
-•	Simplify medical reports
-•	Determine urgency levels
-•	Generate recommendations
-•	Generate disclaimers
-•	Update report status automatically
-•	Create appointment requests for critical cases
+-  Simplify medical reports
+-  Determine urgency levels
+-  Generate recommendations
+-  Generate disclaimers
+-  Update report status automatically
+-  Create appointment requests for critical cases
 
 # Features
-- AI Features
-•	Medical report simplification using Gemini AI
-•	Urgency classification (Low, Moderate, High)
-•	Suggested actions for patients
-•	Disclaimer generation
+AI Features
+-  Medical report simplification using Gemini AI
+-  Urgency classification (Low, Moderate, High)
+-  Suggested actions for patients
+-  Disclaimer generation
 
-- Salesforce Features
-•	Custom Objects
-•	Page Layouts
-•	List Views
-•	Reports
-•	Dashboards
+Salesforce Features
+-  Custom Objects
+-  Page Layouts
+-  List Views
+-  Reports
+-  Dashboards
 
-- Automation Features
-•	Automatic appointment creation for high urgency reports
-•	Duplicate appointment prevention
-•	Analysis date tracking
-•	Status updates based on urgency
+Automation Features
+-  Automatic appointment creation for high urgency reports
+-  Duplicate appointment prevention
+-  Analysis date tracking
+-  Status updates based on urgency
 
-- Technical Features
-•	Apex Classes
-•	HTTP Callouts
-•	JSON Parsing
-•	Exception Handling
-•	Test Classes
+Technical Features
+-  Apex Classes
+-  HTTP Callouts
+-  JSON Parsing
+-  Exception Handling
+-  Test Classes
 
 # Tech Stack
-•	Salesforce Platform
-•	Apex
-•	SOQL
-•	HTTP Callouts
-•	Gemini API
-•	JSON Serialization / Deserialization
-•	Reports & Dashboards
-•	Git & GitHub
+-  Salesforce Platform
+-  Apex
+-  SOQL
+-  HTTP Callouts
+-  Gemini API
+-  JSON Serialization / Deserialization
+-  Reports & Dashboards
+-  Git & GitHub
 
 # Custom Objects
-Patient : Stores patient information.
-Medical Report :
+- Patient : Stores patient information.
+- Medical Report :
 Stores
-•	Report text
-•	AI Summary
-•	Urgency Level
-•	Suggested Action
-•	Disclaimer
-•	Analysis Date
-•	Status
-Appointment Request : Stores appointment requests generated for critical cases.
+	-Report text
+	-AI Summary
+	-Urgency Level
+	-Suggested Action
+	-Disclaimer
+	-Analysis Date
+	-Status
+- Appointment Request : Stores appointment requests generated for critical cases.
 
 # Reports Created
-•	Medical Reports by Urgency
-•	Appointment Requests Overview
-•	Patient Directory
+-	Medical Reports by Urgency
+-	Appointment Requests Overview
+-	Patient Directory
 
 # Dashboard
-AI Patient Monitoring Dashboard
+- AI Patient Monitoring Dashboard
 Includes:
-•	Medical Reports widget
-•	Appointment Requests widget
-•	Patient Directory widget
+	-Medical Reports widget
+	-Appointment Requests widget
+	-Patient Directory widget
 
 # List Views
 Medical Reports
-•	High Urgency Reports
-•	Recent Medical Reports
+-	High Urgency Reports
+-	Recent Medical Reports
 Appointment Requests
-•	Pending Appointment Requests
+-	Pending Appointment Requests
 
 # Architecture
 
@@ -103,6 +103,7 @@ Appointment Request Created
         ↓
 Dashboard Updated
 
+
 # Workflow
 1. User creates a Medical Report.
 2. Apex sends report text to Gemini API.
@@ -113,8 +114,8 @@ Dashboard Updated
 
 # Testing
 The project includes:
-•	GeminiServiceTest
-•	MedicalReportProcessorTest
+-  GeminiServiceTest
+-  MedicalReportProcessorTest
 Both test classes execute successfully and provide coverage for the core business logic.
 
 # Challenges Faced
@@ -133,29 +134,64 @@ Solution : Planned repository cleanup to retain only project-specific files.
 Salesforce CLI Issues : Source tracking and org retrieval caused errors.
 Solution : Used proper target org configuration and corrected retrieval commands.
 
+# Setup Instructions
+1. Clone the repository.
+2. Authorize your Salesforce org.
+3. Deploy metadata to the org.
+4. Configure Named Credentials for Gemini API.
+5. Run Apex tests.
+6. Create sample Medical Report records.
+7. Execute `MedicalReportProcessor` to analyze reports.
+
+# Project Structure
+ai-patient-support-agentforce
+
+├── force-app/              # Salesforce metadata and source code
+├── screenshots/            # Project screenshots
+├── scripts/                # Utility scripts
+├── config/                 # Project configuration
+├── README.md               # Project documentation
+├── project-notes.txt       # Development notes
+├── interview-notes.txt     # Interview preparation notes
+├── package.xml
+└── sfdx-project.json
+
 # Project Screenshots
-Gemini API Integration Success
-•	screenshots/day4-gemini-success.png
-•	screenshots/day4-gemini-success-2.png
-•	screenshots/day4-gemini-success-3.png
-Medical Report Analysis
-•	screenshots/day10-medical-report.png
-Appointment Request
-•	screenshots/day10-appointment-request.png
-Dashboard
-•	screenshots/day10-dashboard.png
-High Urgency Reports List View
-•	screenshots/day10-high-urgency-list.png
-Apex Test Results
-•	screenshots/day10-test-results.png
+
+## Gemini API Integration Success
+
+![Gemini Integration](screenshots/day4-gemini-success.png)
+
+## Medical Report Analysis
+
+![Medical Report](screenshots/day10-medical-report.png)
+
+## Appointment Request
+
+![Appointment Request](screenshots/day10-appointment-request.png)
+
+## Dashboard
+
+![Dashboard](screenshots/day10-dashboard.png)
+
+## High Urgency Reports List View
+
+![List View](screenshots/day10-high-urgency-list.png)
+
+## Apex Test Results
+
+![Test Results](screenshots/day10-test-results.png)
+
+
 
 # Future Enhancements
-•	Lightning Web Components (LWC)
-•	Email notifications for critical cases
-•	Agentforce integration
-•	Enhanced analytics
-•	Electronic Health Record (EHR) integration
+-  Lightning Web Components (LWC)
+-  Email notifications for critical cases
+-  Agentforce integration
+-  Enhanced analytics
+-  Electronic Health Record (EHR) integration
 
 # Author
-Anusha Maggidi
+**Anusha Maggidi**
 -Aspiring Software Developer passionate about building AI-powered solutions and solving real-world problems through technology.
+GitHub: https://github.com/maggidi-anusha
