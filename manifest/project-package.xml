@@ -36,6 +36,10 @@
         <name>ApexClass</name>
     </types>
     <types>
+        <members>AI_Patient_Support_Access</members>
+        <name>PermissionSet</name>
+    </types>
+    <types>
         <members>Medical_Reports</members>
         <members>Appointment_Requests</members>
         <members>Patients</members>
