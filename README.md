@@ -133,7 +133,7 @@ See **[docs/RECOVERY.md](docs/RECOVERY.md)** for step-by-step deployment to a ne
 | The same report was sometimes classified differently. | Added explicit triage rules to the prompt, temperature 0 and no thinking step. |
 | API errors surfaced as null pointer exceptions. | Check the HTTP status and raise `GeminiApiException` with Gemini's error message. |
 | The API key was stored as plain text in credential metadata. | Moved it to an encrypted External Credential principal parameter. |
-| Retrieving the whole org pulled in unrelated metadata. | Added a project-only deployment manifest (`manifest/project-package.xml`). |
+| Retrieving the whole org pulled in unrelated standard metadata. | Removed it from the repository and added a project-only deployment manifest (`manifest/project-package.xml`). |
 
 ## Limitations
 
@@ -167,8 +167,6 @@ ai-patient-support-agentforce
 ├── scripts/apex/           # Demo data and analysis scripts
 ├── docs/                   # Architecture, AI contract, triage rules, recovery guide, demo script
 ├── screenshots/
-├── interview-notes.txt
-├── project-notes.txt
 └── sfdx-project.json
 ```
 
@@ -176,27 +174,27 @@ ai-patient-support-agentforce
 
 ### Gemini API Integration
 
-![Gemini Integration](screenshots/day4-gemini-success.png)
+![Gemini Integration](screenshots/gemini-api-response.png)
 
 ### Medical Report Analysis
 
-![Medical Report](screenshots/day10-medical-report.png)
+![Medical Report](screenshots/medical-report-analysis.png)
 
 ### Appointment Request
 
-![Appointment Request](screenshots/day10-appointment-request.png)
+![Appointment Request](screenshots/appointment-request.png)
 
 ### Dashboard
 
-![Dashboard](screenshots/day10-dashboard.png)
+![Dashboard](screenshots/dashboard.png)
 
 ### High Urgency Reports List View
 
-![List View](screenshots/day10-high-urgency-list.png)
+![List View](screenshots/high-urgency-list-view.png)
 
 ### Apex Test Results
 
-![Test Results](screenshots/day10-test-results.png)
+![Test Results](screenshots/apex-test-results.png)
 
 ## Author
 

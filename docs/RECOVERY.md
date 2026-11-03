@@ -48,8 +48,9 @@ Then deploy the validated job (use the Deploy ID printed by the validation):
 sf project deploy quick --job-id <DEPLOY_ID> --target-org ai-patient-org
 ```
 
-Do not deploy the whole `force-app` folder: it still contains unrelated standard
-metadata from an earlier whole-org retrieve.
+The manifest and the `force-app` folder contain the same components, so
+`sf project deploy start --source-dir force-app` works too; the manifest makes the
+deployment scope explicit.
 
 ## 3. Grant access
 
