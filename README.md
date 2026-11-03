@@ -1,200 +1,206 @@
 # AI Patient Support & Medical Report Simplifier
-An AI-powered Salesforce application that analyzes medical reports, simplifies complex medical terminology, determines urgency levels, and automatically creates appointment requests for critical cases.
 
-# Problem Statement
-Medical reports often contain complex terminology that patients may find difficult to understand. Delays in identifying critical conditions can negatively impact patient care.
-This project aims to bridge that gap by leveraging Artificial Intelligence to simplify reports and improve healthcare workflows.
+A Salesforce-based patient support application that uses Google's Gemini API to turn
+medical report text into a plain-language summary, classify its urgency, suggest a next
+step, and automatically create an appointment request for high-urgency reports.
 
-# Solution
-The application integrates Salesforce with Google's Gemini API to:
--  Simplify medical reports
--  Determine urgency levels
--  Generate recommendations
--  Generate disclaimers
--  Update report status automatically
--  Create appointment requests for critical cases
+> This is a patient-support and report-understanding tool. It does not diagnose
+> conditions or replace a doctor. Every analysis includes a medical disclaimer.
 
-# Features
-AI Features
--  Medical report simplification using Gemini AI
--  Urgency classification (Low, Moderate, High)
--  Suggested actions for patients
--  Disclaimer generation
+## Problem Statement
 
-Salesforce Features
--  Custom Objects
--  Page Layouts
--  List Views
--  Reports
--  Dashboards
+Medical reports often contain complex medical terminology that can be difficult for
+patients to understand. Patients may struggle to identify the important findings,
+understand the urgency of their reports, and determine what action they should take next.
 
-Automation Features
--  Automatic appointment creation for high urgency reports
--  Duplicate appointment prevention
--  Analysis date tracking
--  Status updates based on urgency
+This project is a Salesforce-based patient support system that uses the Gemini API to
+analyze medical report text, generate easy-to-understand summaries, classify the report's
+urgency, and suggest appropriate next steps. It also helps manage patient records and
+appointment requests, particularly for reports classified as high urgency.
 
-Technical Features
--  Apex Classes
--  HTTP Callouts
--  JSON Parsing
--  Exception Handling
--  Test Classes
+## What It Does
 
-# Tech Stack
--  Salesforce Platform
--  Apex
--  SOQL
--  HTTP Callouts
--  Gemini API
--  JSON Serialization / Deserialization
--  Reports & Dashboards
--  Git & GitHub
+- Accepts medical report text on a Medical Report record.
+- Uses the Gemini API to generate a simplified summary.
+- Classifies urgency as **Low**, **Moderate** or **High**.
+- Suggests a next action and stores a medical disclaimer.
+- Stores the analysis and the analysis date on the report in Salesforce.
+- Updates the report status based on urgency.
+- Automatically creates an Appointment Request for high-urgency reports, without
+  creating duplicates.
+- Provides list views, reports and a dashboard to monitor reports and appointments.
 
-# Custom Objects
-- Patient : Stores patient information.
-- Medical Report :
-Stores
-	-Report text
-	-AI Summary
-	-Urgency Level
-	-Suggested Action
-	-Disclaimer
-	-Analysis Date
-	-Status
-- Appointment Request : Stores appointment requests generated for critical cases.
+| Urgency | Medical Report Status | Appointment Request |
+|---|---|---|
+| High | Escalated | Created (Status = New), unless one already exists |
+| Moderate | In Progress | Not created |
+| Low | Reviewed | Not created |
 
-# Reports Created
--	Medical Reports by Urgency
--	Appointment Requests Overview
--	Patient Directory
+## Tech Stack
 
-# Dashboard
-- AI Patient Monitoring Dashboard
-Includes:
-	-Medical Reports widget
-	-Appointment Requests widget
-	-Patient Directory widget
+Salesforce Platform (Developer Edition) · Apex · SOQL · HTTP callouts · Named and External
+Credentials · Gemini API (`gemini-2.5-flash`) · JSON serialization/deserialization ·
+Reports and Dashboards · Salesforce CLI · Git and GitHub
 
-# List Views
-Medical Reports
--	High Urgency Reports
--	Recent Medical Reports
-Appointment Requests
--	Pending Appointment Requests
-
-# Architecture
+## Architecture
 
 ```text
-Medical Report Created
+Medical Report (Report_Text__c)
         ↓
-Gemini API Analysis
+MedicalReportProcessor.analyzeAndUpdateReport(reportId)
         ↓
-AI Summary Generated
+GeminiService.analyzeReport(text) ── callout:Gemini_API ──► Gemini API
+        ↓                                                    (JSON response)
+ReportAnalysisResponse (summary, urgency, recommendation, disclaimer)
         ↓
-Urgency Assigned
+Medical Report updated: AI Summary, Urgency, Suggested Action,
+                        Disclaimer, Status, Analysis Date
         ↓
-Status Updated
+High urgency and no existing appointment → Appointment Request (New)
         ↓
-Suggested Action Generated
-        ↓
-Analysis Date Stored
-        ↓
-Appointment Request Created
-        ↓
-Dashboard Updated
+List views, reports and dashboard
 ```
 
-# Workflow
-1. User creates a Medical Report.
-2. Apex sends report text to Gemini API.
-3. AI generates summary and urgency level.
-4. Salesforce updates the Medical Report.
-5. High urgency cases trigger appointment creation.
-6. Reports and dashboards provide monitoring.
+Analysis is started by calling `MedicalReportProcessor.analyzeAndUpdateReport(reportId)`,
+for example from Anonymous Apex (see `scripts/apex/analyze-report.apex`). There is no
+trigger or Flow. More detail: [docs/architecture.md](docs/architecture.md).
 
-# Testing
-The project includes:
--  GeminiServiceTest
--  MedicalReportProcessorTest
-Both test classes execute successfully and provide coverage for the core business logic.
+## Data Model
 
-# Challenges Faced
-JSON Parsing Errors : Gemini responses occasionally returned Markdown code blocks.
-Solution : Removed code fences before JSON deserialization.
+| Object | Purpose | Key fields |
+|---|---|---|
+| `Patient__c` | Patient information | Age, Gender, Email, Phone, Notes |
+| `Medical_Report__c` | Report text and its AI analysis | Patient (lookup), Report Text, AI Summary, Urgency Level, Suggested Action, Disclaimer, Status, Analysis Date |
+| `Appointment_Request__c` | Appointment requests for high-urgency reports | Patient (lookup), Medical Report (lookup), Status, Preferred Date, Preferred Time, Notes |
 
-Null Pointer Exceptions : Missing values caused failures.
-Solution : Added null checks and default values.
+## Apex Classes
 
-Duplicate Appointment Creation : Repeated execution created duplicate records.
-Solution : Implemented duplicate-check logic before insertion.
+| Class | Responsibility |
+|---|---|
+| `GeminiService` | Builds the prompt (including triage rules), calls Gemini through the Named Credential with JSON mode and temperature 0, and raises `GeminiApiException` on non-200 responses. |
+| `MedicalReportProcessor` | Parses the response, applies safe defaults, maps urgency to status, updates the report and creates an appointment for High urgency after checking for an existing one. |
+| `ReportAnalysisResponse` | Wrapper class for JSON deserialization. |
+| `GeminiMockResponse` | `HttpCalloutMock` used by the tests. |
 
-Metadata Retrieval Issues : Retrieving the whole org introduced unnecessary metadata.
-Solution : Planned repository cleanup to retain only project-specific files.
+## Security
 
-Salesforce CLI Issues : Source tracking and org retrieval caused errors.
-Solution : Used proper target org configuration and corrected retrieval commands.
+- The Gemini API key is stored in an encrypted **External Credential** principal parameter
+  and added to requests as the `x-goog-api-key` header through a `$Credential` formula.
+- The key is not in Apex code, metadata or this repository.
 
-# Setup Instructions
-1. Clone the repository.
-2. Authorize your Salesforce org.
-3. Deploy metadata to the org.
-4. Configure Named Credentials for Gemini API.
-5. Run Apex tests.
-6. Create sample Medical Report records.
-7. Execute `MedicalReportProcessor` to analyze reports.
+## Testing
 
-# Project Structure
-ai-patient-support-agentforce
+10 Apex unit tests, all passing, with mocked HTTP callouts (no real API calls):
+
+| Class | Coverage |
+|---|---|
+| `GeminiService` | 100% |
+| `MedicalReportProcessor` | 98% |
+
+The tests cover the request configuration, API errors, High urgency with appointment
+creation, duplicate prevention, Moderate and Low urgency without appointments, and
+default values for incomplete AI responses.
+
+```bash
+sf apex run test --class-names GeminiServiceTest --class-names MedicalReportProcessorTest --code-coverage --result-format human --target-org <alias>
+```
+
+## Reports, Dashboard and List Views
+
+- **Reports:** Medical Reports by Urgency, Appointment Requests Overview, Patient Directory
+- **Dashboard:** AI Patient Monitoring Dashboard
+- **List views:** High Urgency Reports, Recent Medical Reports (last 30 days),
+  Pending Appointment Requests (status New)
+
+## Setup
+
+See **[docs/RECOVERY.md](docs/RECOVERY.md)** for step-by-step deployment to a new org. In short:
+
+1. Authorize an org: `sf org login web --alias ai-patient-org --set-default`
+2. Deploy: `sf project deploy start --manifest manifest/project-package.xml --test-level RunSpecifiedTests --tests GeminiServiceTest --tests MedicalReportProcessorTest`
+3. Assign access: `sf org assign permset --name AI_Patient_Support_Access`
+4. Add the Gemini API key to the `Gemini_External_Credential` principal (Setup only).
+5. Create demo data: `sf apex run --file scripts/apex/create-demo-data.apex`
+6. Analyze a report: `sf apex run --file scripts/apex/analyze-report.apex`
+
+## Challenges and Solutions
+
+| Challenge | Solution |
+|---|---|
+| Gemini responses were wrapped in Markdown code blocks, breaking JSON parsing. | Stripped code fences before deserializing; later enabled Gemini JSON response mode. |
+| Missing values caused null pointer exceptions. | Added null checks and default values. |
+| Repeated analysis created duplicate appointments. | Query for an existing appointment before inserting a new one. |
+| The same report was sometimes classified differently. | Added explicit triage rules to the prompt, temperature 0 and no thinking step. |
+| API errors surfaced as null pointer exceptions. | Check the HTTP status and raise `GeminiApiException` with Gemini's error message. |
+| The API key was stored as plain text in credential metadata. | Moved it to an encrypted External Credential principal parameter. |
+| Retrieving the whole org pulled in unrelated metadata. | Added a project-only deployment manifest (`manifest/project-package.xml`). |
+
+## Limitations
+
+- Analysis is started manually; only one report can be analyzed per transaction because
+  Salesforce does not allow a callout after DML in the same transaction.
+- The Gemini free tier has a small daily request quota.
+- AI output can still vary for borderline reports; it is guidance, not a diagnosis.
+
+## Future Enhancements
+
+- Run analysis asynchronously (Queueable with callouts) so it can start automatically when
+  a report is saved.
+- Lightning Web Component for patients to view their simplified report.
+- Email notifications for high-urgency cases.
+- File upload for PDF reports.
+- Electronic Health Record (EHR) integration.
+
+## Project Structure
 
 ```text
-├── force-app/              # Salesforce metadata and source code
-├── screenshots/            # Project screenshots
-├── scripts/                # Utility scripts
-├── config/                 # Project configuration
-├── README.md               # Project documentation
-├── project-notes.txt       # Development notes
-├── interview-notes.txt     # Interview preparation notes
-├── package.xml
+ai-patient-support-agentforce
+├── force-app/main/default/
+│   ├── classes/            # Apex classes and tests
+│   ├── objects/            # Patient, Medical Report, Appointment Request
+│   ├── namedCredentials/   # Gemini_API
+│   ├── externalCredentials/# Gemini_External_Credential (no secrets)
+│   ├── permissionsets/     # AI_Patient_Support_Access
+│   ├── reports/  dashboards/  reportTypes/
+│   └── layouts/  tabs/
+├── manifest/project-package.xml   # Project-only deployment manifest
+├── scripts/apex/           # Demo data and analysis scripts
+├── docs/                   # Architecture, AI contract, triage rules, recovery guide, demo script
+├── screenshots/
+├── interview-notes.txt
+├── project-notes.txt
 └── sfdx-project.json
 ```
 
-# Project Screenshots
+## Screenshots
 
-## Gemini API Integration Success
+### Gemini API Integration
 
 ![Gemini Integration](screenshots/day4-gemini-success.png)
 
-## Medical Report Analysis
+### Medical Report Analysis
 
 ![Medical Report](screenshots/day10-medical-report.png)
 
-## Appointment Request
+### Appointment Request
 
 ![Appointment Request](screenshots/day10-appointment-request.png)
 
-## Dashboard
+### Dashboard
 
 ![Dashboard](screenshots/day10-dashboard.png)
 
-## High Urgency Reports List View
+### High Urgency Reports List View
 
 ![List View](screenshots/day10-high-urgency-list.png)
 
-## Apex Test Results
+### Apex Test Results
 
 ![Test Results](screenshots/day10-test-results.png)
 
+## Author
 
-
-# Future Enhancements
--  Lightning Web Components (LWC)
--  Email notifications for critical cases
--  Agentforce integration
--  Enhanced analytics
--  Electronic Health Record (EHR) integration
-
-# Author
 **Anusha Maggidi**
--Aspiring Software Developer passionate about building AI-powered solutions and solving real-world problems through technology.
+Aspiring Software Developer passionate about building AI-powered solutions and solving
+real-world problems through technology.
 GitHub: https://github.com/maggidi-anusha

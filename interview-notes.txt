@@ -2,10 +2,13 @@ Project Name:
 AI Patient Support & Medical Report Simplifier
 
 Problem:
-Patients often struggle to understand complex medical reports.
+Medical reports often contain complex medical terminology that patients find difficult to understand. Patients may struggle to identify the important findings, understand how urgent their report is, and decide what to do next.
 
 Solution:
-I integrated Salesforce with Google's Gemini API to generate simplified summaries, determine urgency levels, and automate appointment creation for critical cases.
+A Salesforce-based patient support system that uses the Gemini API to analyze medical report text, generate easy-to-understand summaries, classify urgency, and suggest next steps. It also manages patient records and creates appointment requests for high-urgency reports.
+
+Positioning:
+It is a patient-support and report-understanding tool. It does not diagnose conditions or replace a doctor, and every analysis includes a disclaimer.
 
 Technologies Used:
 Salesforce, Apex, SOQL, HTTP Callouts, Gemini API, JSON, Reports, Dashboards, Git, GitHub.
@@ -19,7 +22,7 @@ One of my projects is AI Patient Support & Medical Report Simplifier built on Sa
 
 The problem I wanted to solve was that medical reports are often difficult for patients to understand, and critical conditions may require immediate attention.
 
-To solve this, I integrated Salesforce with Google's Gemini API using Apex HTTP callouts. When a Medical Report is created, the report text is sent to Gemini AI, which generates a simplified summary, determines the urgency level, and provides recommendations and disclaimers.
+To solve this, I integrated Salesforce with Google's Gemini API using Apex HTTP callouts through a Named Credential. When a Medical Report is analyzed, the report text is sent to Gemini, which returns a simplified summary, the urgency level, a recommendation and a disclaimer. Salesforce stores these on the report and updates its status based on urgency.
 
 For high urgency cases, the system automatically creates an Appointment Request. I also built reports, dashboards, and list views for monitoring the data.
 
@@ -44,6 +47,21 @@ A: JSON parsing errors, null pointer exceptions, duplicate appointment creation,
 Q5. What did you learn from the project?
 A: Apex development, API integration, exception handling, testing, and automation.
 
+Q6. How is the API key secured?
+A: It is stored in an encrypted External Credential principal parameter and added to the request header with a $Credential formula. It never appears in Apex code, metadata or GitHub.
+
+Q7. How do you test code that calls an external API?
+A: With HttpCalloutMock classes that return fixed Gemini responses, so unit tests never call the real API. There are 10 tests covering High, Moderate and Low urgency, duplicate prevention, missing fields and API errors, with 98-100% coverage.
+
+Q8. The AI is not deterministic. How did you make the urgency reliable?
+A: The same report was sometimes classified Low and sometimes Moderate. I added explicit triage rules to the prompt, set temperature to 0, disabled the thinking step and used JSON response mode. The documented test reports then returned the expected urgency in 9 out of 9 runs.
+
+Q9. How is the analysis triggered, and how would you automate it?
+A: By calling MedicalReportProcessor.analyzeAndUpdateReport(reportId). Salesforce does not allow a callout after DML in the same transaction, so to run it automatically when a report is saved I would move the call into a Queueable job that allows callouts.
+
+Q10. Does the application diagnose patients?
+A: No. It explains report text in simple language, flags urgency and suggests a next step, always with a disclaimer that it is not medical advice.
+
 ****STAR Example
 
 Situation:
@@ -57,6 +75,20 @@ I queried existing Appointment Request records before inserting a new one.
 
 Result:
 The system successfully prevented duplicate appointments and became more reliable.
+
+****STAR Example 2
+
+Situation:
+After recovering the project, the deployment validation failed: MedicalReportProcessor had 74.6% test coverage, below Salesforce's 75% requirement.
+
+Task:
+Pass validation without weakening the deployment checks.
+
+Action:
+I found that only the Low-urgency path was tested, so I added tests for High urgency with appointment creation, duplicate prevention, Moderate urgency, missing fields and API errors, using HTTP callout mocks.
+
+Result:
+Coverage rose to 98%, the deployment validated, and the most important feature (automatic appointments without duplicates) is now covered by tests.
 
 
 

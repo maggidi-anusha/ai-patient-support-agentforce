@@ -1,3 +1,12 @@
+# Prompt Template (design)
+
+This is the original prompt design. The prompt actually sent to Gemini is built in
+`force-app/main/default/classes/GeminiService.cls` and also includes the triage rules
+from `triage-rules.md`. Rule 1 below ("Do not provide a diagnosis") is not yet part of
+the implemented prompt.
+
+---
+
 You are an AI healthcare assistant.
 
 Your task is to explain a medical report in simple language.
