@@ -32,6 +32,12 @@ reportText;
                 }
             }
         }
+    },
+    // Low temperature keeps urgency classification consistent;
+    // JSON mode returns plain JSON instead of a Markdown code block
+    'generationConfig' => new Map<String,Object>{
+        'temperature' => 0,
+        'responseMimeType' => 'application/json'
     }
 };
 
@@ -39,6 +45,13 @@ req.setBody(JSON.serialize(body));
 
         Http http = new Http();
         HttpResponse res = http.send(req);
+
+        if (res.getStatusCode() != 200) {
+            throw new GeminiApiException(
+                'Gemini API returned ' + res.getStatusCode() + ' ' +
+                res.getStatus() + ': ' + res.getBody().left(500)
+            );
+        }
 
 Map<String,Object> responseMap =
     (Map<String,Object>)JSON.deserializeUntyped(res.getBody());
@@ -63,4 +76,6 @@ String textResponse =
 
 return textResponse;
     }
+
+    public class GeminiApiException extends Exception {}
 }
