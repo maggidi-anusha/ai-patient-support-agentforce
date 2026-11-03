@@ -14,7 +14,11 @@ public with sharing class GeminiService {
         String prompt =
 'You are an AI healthcare assistant.\n' +
 'Explain the report in simple language.\n' +
-'Determine urgency as Low, Moderate, or High.\n' +
+'Determine urgency as Low, Moderate, or High using these rules:\n' +
+'- Low: routine findings, mild deficiencies, no immediate concern.\n' +
+'- Moderate: abnormal findings that need follow-up with a doctor.\n' +
+'- High: critical findings, emergency indicators, immediate medical attention needed.\n' +
+'Base urgency on the findings in the report, not on whether seeing a doctor is generally advisable.\n' +
 'Provide recommendation and disclaimer.\n' +
 'Return ONLY JSON with fields:\n' +
 'summary\n' +
@@ -33,11 +37,14 @@ reportText;
             }
         }
     },
-    // Low temperature keeps urgency classification consistent;
+    // Temperature 0 and no thinking step keep urgency classification consistent;
     // JSON mode returns plain JSON instead of a Markdown code block
     'generationConfig' => new Map<String,Object>{
         'temperature' => 0,
-        'responseMimeType' => 'application/json'
+        'responseMimeType' => 'application/json',
+        'thinkingConfig' => new Map<String,Object>{
+            'thinkingBudget' => 0
+        }
     }
 };
 

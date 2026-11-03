@@ -44,7 +44,13 @@ private class GeminiServiceTest {
         System.assertNotEquals(null, config);
         System.assertEquals(0, config.get('temperature'));
         System.assertEquals('application/json', config.get('responseMimeType'));
+
+        Map<String, Object> thinking =
+            (Map<String, Object>) config.get('thinkingConfig');
+        System.assertEquals(0, thinking.get('thinkingBudget'));
+
         System.assert(mock.requestBody.contains('Hemoglobin levels are slightly low.'));
+        System.assert(mock.requestBody.contains('mild deficiencies'));
 
     }
 
