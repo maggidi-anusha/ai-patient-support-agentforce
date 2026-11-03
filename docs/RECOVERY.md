@@ -4,9 +4,10 @@ Use this guide if the original Developer Edition org expires or becomes unavaila
 All project metadata is in this repository. Secrets (the Gemini API key) and records
 are not, and must be set up again.
 
-> Status: the deployment manifest has been validated (check-only deploy, all tests
-> passing) against the original org. A full deployment to a brand-new org has not
-> been performed yet.
+> Verified on 2026-11-03 in a brand-new Developer Edition org: validation (53 components,
+> 10/10 tests passing), quick deploy, permission set assignment, credential configuration
+> and demo data creation (steps 1–3 and 6) all succeeded. Entering the API key and the
+> live Gemini call (steps 4–5) were verified in the original org.
 
 ## Prerequisites
 
@@ -112,3 +113,6 @@ Demo report names: `Chest Pain Evaluation` (expected High), `Blood Pressure Foll
   `gemini-2.5-flash` at the time of writing). A `429` error means the quota is used up.
 - Only one report can be analyzed per transaction (callout after DML is not allowed).
 - Records are not part of the repository; demo data comes from `create-demo-data.apex`.
+- The dashboard runs as the logged-in user (a dynamic dashboard). Developer Edition orgs
+  allow only a few dynamic dashboards; if the deployment fails on the dashboard for that
+  reason, delete an unused dynamic dashboard in the target org and deploy again.
