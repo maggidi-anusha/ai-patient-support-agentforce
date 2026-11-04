@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Queue xmlns="http://soap.sforce.com/2006/04/metadata">
+    <doesIncludeBosses>false</doesIncludeBosses>
+    <doesSendEmailToMembers>false</doesSendEmailToMembers>
+    <name>Patient Support Messaging</name>
+    <queueMembers>
+        <users>
+            <user>maggidianusha01.1406e3435334@agentforce.com</user>
+        </users>
+    </queueMembers>
+    <queueRoutingConfig>Patient_Support_Routing</queueRoutingConfig>
+    <queueSobject>
+        <sobjectType>MessagingSession</sobjectType>
+    </queueSobject>
+</Queue>
