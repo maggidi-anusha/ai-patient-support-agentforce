@@ -32,6 +32,20 @@ variables:
         description: "This variable may also be referred to as MessagingSession EndUserLanguage"
     VerifiedCustomerId: mutable string
           description: "This variable may also be referred to as VerifiedCustomerId"
+    last_file_id: mutable string = ""
+        description: "Id of the most recent uploaded file that was processed"
+    analysis_message: mutable string = ""
+        description: "Explanation for the patient if the report could not be processed"
+    analysis_summary: mutable string = ""
+        description: "Plain-language summary of the report"
+    analysis_urgency: mutable string = ""
+        description: "Low, Moderate or High"
+    analysis_action: mutable string = ""
+        description: "Suggested next step"
+    analysis_disclaimer: mutable string = ""
+        description: "Medical disclaimer"
+    appointment_created: mutable boolean = False
+        description: "True if an appointment request was created"
     report_submitted: mutable boolean = False
         description: "True after this conversation's report has been analyzed and saved"
     patient_name: mutable string
@@ -57,6 +71,13 @@ start_agent agent_router:
     label: "Agent Router"
     description: "Welcome the user and determine the appropriate subagent based on user input"
 
+    model_config:
+        model: "model://sfdc_ai__DefaultGPT41"
+
+    before_reasoning:
+        if len(@system_variables.uploaded_files) > 0:
+            transition to @subagent.report_intake
+
     reasoning:
         instructions: ->
             | You are only a router. Never write a reply to the user yourself: for every message, call exactly one of your tools, and let that subagent reply. Do not greet, thank or ask for anything.
@@ -72,6 +93,9 @@ start_agent agent_router:
 subagent report_intake:
     label: "Report Intake"
     description: "Collects patient details and a PDF medical report, then returns the analysis to the patient."
+
+    model_config:
+        model: "model://sfdc_ai__DefaultGPT41"
 
     actions:
         submit_patient_report:
@@ -116,6 +140,26 @@ subagent report_intake:
                     description: "True if an appointment request was created"
             target: "apex://AgentReportIntake"
 
+    before_reasoning:
+        if len(@system_variables.uploaded_files) > 0 and @variables.report_submitted == False and @variables.patient_phone is not None and @variables.last_file_id != @system_variables.uploaded_files[-1].id:
+            set @variables.last_file_id = @system_variables.uploaded_files[-1].id
+            run @actions.submit_patient_report
+                with patientName=@variables.patient_name
+                with age=@variables.patient_age
+                with gender=@variables.patient_gender
+                with email=@variables.patient_email
+                with phone=@variables.patient_phone
+                with fileId=@system_variables.uploaded_files[-1].id
+                with fileName=@system_variables.uploaded_files[-1].name
+                with mimeType=@system_variables.uploaded_files[-1].mime_type
+                set @variables.report_submitted = @outputs.success
+                set @variables.analysis_message = @outputs.message
+                set @variables.analysis_summary = @outputs.summary
+                set @variables.analysis_urgency = @outputs.urgency
+                set @variables.analysis_action = @outputs.suggestedAction
+                set @variables.analysis_disclaimer = @outputs.disclaimer
+                set @variables.appointment_created = @outputs.appointmentCreated
+
     reasoning:
         instructions: ->
             | If the patient describes symptoms, a possible emergency, or thoughts of self-harm or suicide, use go_to_urgent_help immediately and do not reply yourself.
@@ -140,21 +184,19 @@ subagent report_intake:
             ask for @variables.patient_phone
                 instructions: "Please ask for the patient's phone number."
 
-            if @variables.patient_phone is not None:
-                | All details are collected. If no report has been analyzed yet, ask the patient to upload their medical report as a PDF using the attachment button, and remind them not to use real medical information in this demo. When a file has been uploaded, call submit_report once. If the action returns success false, tell the patient its message and help them fix the problem.
-                  If the action returned success true, present the result using only its outputs: the summary, the urgency level, the suggested next step, and the disclaimer word for word. If urgency is High, begin by telling the patient to seek immediate medical attention or call their local emergency number. If appointmentCreated is true, say an appointment request has been created and that it is not a confirmed appointment.
+            if @variables.patient_phone is not None and @variables.report_submitted == False:
+                | All details are collected. Ask the patient to upload their medical report as a PDF using the attachment button, and remind them not to use real medical information in this demo. Never claim to have read a report yourself.
+            if @variables.analysis_message != "" and @variables.report_submitted == False:
+                | The last upload could not be processed. Tell the patient this, word for word: {!@variables.analysis_message}
+            if @variables.report_submitted == True:
+                | The report has been analyzed. Present exactly these results, adding nothing:
+                  Summary: {!@variables.analysis_summary}
+                  Urgency: {!@variables.analysis_urgency}
+                  Suggested next step: {!@variables.analysis_action}
+                  Disclaimer: {!@variables.analysis_disclaimer}
+                  Appointment request created: {!@variables.appointment_created}
+                  If urgency is High, begin by telling the patient to seek immediate medical attention or call their local emergency number. If an appointment request was created, say that it is not a confirmed appointment.
         actions:
-            submit_report: @actions.submit_patient_report
-                available when len(@system_variables.uploaded_files) > 0 and @variables.report_submitted == False and @variables.patient_phone is not None
-                with patientName=@variables.patient_name
-                with age=@variables.patient_age
-                with gender=@variables.patient_gender
-                with email=@variables.patient_email
-                with phone=@variables.patient_phone
-                with fileId=@system_variables.uploaded_files[-1].id
-                with fileName=@system_variables.uploaded_files[-1].name
-                with mimeType=@system_variables.uploaded_files[-1].mime_type
-                set @variables.report_submitted = @outputs.success
             go_to_urgent_help: @utils.transition to @subagent.urgent_help
                 description: "The user describes current symptoms or a possible medical emergency, such as chest pain, trouble breathing, severe bleeding, or thoughts of self-harm."
             go_to_off_topic: @utils.transition to @subagent.off_topic
