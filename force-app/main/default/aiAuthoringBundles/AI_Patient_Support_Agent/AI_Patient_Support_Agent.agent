@@ -45,6 +45,9 @@ variables:
     patient_phone: mutable string
         description: "Phone number given by the patient"
 
+connection messaging:
+    adaptive_response_allowed: True
+
 language:
     default_locale: "en_US"
     additional_locales: ""
