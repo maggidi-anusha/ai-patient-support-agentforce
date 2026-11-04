@@ -5,6 +5,11 @@ public with sharing class MedicalReportProcessor {
         String jsonResponse =
     GeminiService.analyzeReport(reportText);
 
+        return parseAnalysis(jsonResponse);
+    }
+
+    public static ReportAnalysisResponse parseAnalysis(String jsonResponse) {
+
 jsonResponse = jsonResponse.replace('```json', '');
 jsonResponse = jsonResponse.replace('```', '');
 jsonResponse = jsonResponse.trim();
@@ -38,6 +43,33 @@ jsonResponse = jsonResponse.trim();
         if(response == null){
             return;
         }
+
+        applyAnalysis(report, response);
+
+    }
+    catch(Exception ex){
+
+    System.debug(
+        'ERROR MESSAGE: ' +
+        ex.getMessage()
+    );
+
+    System.debug(
+        'LINE NUMBER: ' +
+        ex.getLineNumber()
+    );
+
+}
+}
+
+    // Saves the analysis on the report and returns true if a new
+    // appointment request was created. Used by manual and agent analysis.
+    public static Boolean applyAnalysis(
+        Medical_Report__c report,
+        ReportAnalysisResponse response
+    ) {
+
+        Boolean appointmentCreated = false;
 
         // Safe default values
         String summary =
@@ -110,6 +142,8 @@ else if(urgency == 'Low'){
 
                 insert appointment;
 
+                appointmentCreated = true;
+
                 System.debug('Appointment created');
 
             }
@@ -120,19 +154,6 @@ else if(urgency == 'Low'){
             }
         }
 
+        return appointmentCreated;
     }
-    catch(Exception ex){
-
-    System.debug(
-        'ERROR MESSAGE: ' +
-        ex.getMessage()
-    );
-
-    System.debug(
-        'LINE NUMBER: ' +
-        ex.getLineNumber()
-    );
-
-}
-}
 }
