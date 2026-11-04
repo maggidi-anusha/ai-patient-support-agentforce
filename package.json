@@ -1,8 +1,8 @@
 {
-  "name": "salesforce-app",
+  "name": "ai-patient-support-agentforce",
   "private": true,
   "version": "1.0.0",
-  "description": "Salesforce App",
+  "description": "Salesforce patient support app that simplifies medical reports with the Gemini API",
   "scripts": {
     "lint": "eslint **/{aura,lwc}/**/*.js",
     "test": "npm run test:unit",

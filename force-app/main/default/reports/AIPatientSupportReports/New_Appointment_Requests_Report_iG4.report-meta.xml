@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <columns>
+        <field>Appointment_Request__c$Name</field>
+    </columns>
+    <columns>
+        <field>Appointment_Request__c$Status__c</field>
+    </columns>
+    <columns>
+        <field>Appointment_Request__c$Patient__c</field>
+    </columns>
+    <columns>
+        <field>Appointment_Request__c$Medical_Report__c</field>
+    </columns>
+    <format>Tabular</format>
+    <name>Appointment Requests Overview</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>Appointment_Requests__c</reportType>
+    <scope>user</scope>
+    <showDetails>true</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <timeFrameFilter>
+        <dateColumn>Appointment_Request__c$CreatedDate</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

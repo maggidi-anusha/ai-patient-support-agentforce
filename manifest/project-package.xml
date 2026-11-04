@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>Patient__c</members>
+        <members>Medical_Report__c</members>
+        <members>Appointment_Request__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Patient__c</members>
+        <members>Medical_Report__c</members>
+        <members>Appointment_Request__c</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>Patient__c-Patient Layout</members>
+        <members>Medical_Report__c-Medical Report Layout</members>
+        <members>Appointment_Request__c-Appointment Request Layout</members>
+        <name>Layout</name>
+    </types>
+    <types>
+        <members>Gemini_External_Credential</members>
+        <name>ExternalCredential</name>
+    </types>
+    <types>
+        <members>Gemini_API</members>
+        <name>NamedCredential</name>
+    </types>
+    <types>
+        <members>ReportAnalysisResponse</members>
+        <members>GeminiService</members>
+        <members>MedicalReportProcessor</members>
+        <members>GeminiMockResponse</members>
+        <members>GeminiServiceTest</members>
+        <members>MedicalReportProcessorTest</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>AI_Patient_Support_Access</members>
+        <name>PermissionSet</name>
+    </types>
+    <types>
+        <members>Medical_Reports</members>
+        <members>Appointment_Requests</members>
+        <members>Patients</members>
+        <name>ReportType</name>
+    </types>
+    <types>
+        <members>AIPatientSupportReports</members>
+        <members>AIPatientSupportReports/New_Medical_Reports_Report_ihY</members>
+        <members>AIPatientSupportReports/New_Appointment_Requests_Report_iG4</members>
+        <members>AIPatientSupportReports/New_Patients_Report_Ce4</members>
+        <name>Report</name>
+    </types>
+    <types>
+        <members>AIPatientSupportDashboards</members>
+        <members>AIPatientSupportDashboards/FyyDBhRNiwoLmQemmEDaQZqjjWzvfo</members>
+        <name>Dashboard</name>
+    </types>
+    <version>66.0</version>
+</Package>
