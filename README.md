@@ -4,8 +4,8 @@ A Salesforce-based patient support application that uses Google's Gemini API to 
 medical report text into a plain-language summary, classify its urgency, suggest a next
 step, and automatically create an appointment request for high-urgency reports.
 
-> This is a patient-support and report-understanding tool. It does not diagnose
-> conditions or replace a doctor. Every analysis includes a medical disclaimer.
+> This is a patient-support and report-understanding tool. It is not intended to
+> diagnose conditions or replace a doctor. Every analysis includes a medical disclaimer.
 
 ## Problem Statement
 
@@ -141,6 +141,9 @@ See **[docs/RECOVERY.md](docs/RECOVERY.md)** for step-by-step deployment to a ne
   Salesforce does not allow a callout after DML in the same transaction.
 - The Gemini free tier has a small daily request quota.
 - AI output can still vary for borderline reports; it is guidance, not a diagnosis.
+- The prompt has no explicit "do not diagnose" instruction, so summaries may mention
+  possible conditions. Adding that instruction was tested and reverted because reports
+  expected to be Low were classified as Moderate.
 
 ## Future Enhancements
 
@@ -171,6 +174,10 @@ ai-patient-support-agentforce
 ```
 
 ## Screenshots
+
+### Data Model
+
+![Data Model](screenshots/data-model.png)
 
 ### Gemini API Integration
 
