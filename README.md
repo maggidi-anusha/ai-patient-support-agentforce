@@ -4,6 +4,10 @@ A Salesforce-based patient support application that uses Google's Gemini API to 
 medical report text into a plain-language summary, classify its urgency, suggest a next
 step, and automatically create an appointment request for high-urgency reports.
 
+Patients can also use an **Agentforce chat agent** on a website: it asks for their
+details one at a time, takes the report as a PDF upload, runs the analysis in Salesforce
+and explains the result in the conversation.
+
 > This is a patient-support and report-understanding tool. It is not intended to
 > diagnose conditions or replace a doctor. Every analysis includes a medical disclaimer.
 
@@ -29,6 +33,8 @@ appointment requests, particularly for reports classified as high urgency.
 - Automatically creates an Appointment Request for high-urgency reports, without
   creating duplicates.
 - Provides list views, reports and a dashboard to monitor reports and appointments.
+- Offers a patient chat agent that collects details, accepts a PDF report, analyzes it
+  and explains the result in the chat ([docs/agent.md](docs/agent.md)).
 
 | Urgency | Medical Report Status | Appointment Request |
 |---|---|---|
@@ -40,7 +46,8 @@ appointment requests, particularly for reports classified as high urgency.
 
 Salesforce Platform (Developer Edition) · Apex · SOQL · HTTP callouts · Named and External
 Credentials · Gemini API (`gemini-2.5-flash`) · JSON serialization/deserialization ·
-Reports and Dashboards · Salesforce CLI · Git and GitHub
+Agentforce Service Agent (Agent Script) · Enhanced Chat (Messaging for In-App and Web) ·
+Omni-Channel routing flow · Reports and Dashboards · Salesforce CLI · Git and GitHub
 
 ## Architecture
 
@@ -62,8 +69,27 @@ List views, reports and dashboard
 ```
 
 Analysis is started by calling `MedicalReportProcessor.analyzeAndUpdateReport(reportId)`,
-for example from Anonymous Apex (see `scripts/apex/analyze-report.apex`). There is no
-trigger or Flow. More detail: [docs/architecture.md](docs/architecture.md).
+for example from Anonymous Apex (see `scripts/apex/analyze-report.apex`), or by the chat
+agent when a patient uploads a PDF. More detail: [docs/architecture.md](docs/architecture.md).
+
+## Patient Chat Agent
+
+```text
+Website chat → Omni-Channel flow → AI_Patient_Support_Agent
+   → asks for name, age, gender, email, phone → patient uploads a PDF
+   → AgentReportIntake → Gemini (PDF) → Patient, Medical Report, Appointment Request
+   → summary, urgency, next step and disclaimer shown in the chat
+```
+
+- Asks for each detail in turn and validates them before any analysis.
+- Reads the uploaded PDF from the chat session, analyzes it with the same triage rules as
+  the rest of the app, and saves the records in one transaction.
+- Runs a safety check on every message and directs emergencies to emergency services.
+- Answers follow-up questions using only the patient's own results, then closes the
+  conversation.
+
+Design and limitations: [docs/agent.md](docs/agent.md) · Setup:
+[docs/RECOVERY.md](docs/RECOVERY.md), step 8 · Demo: [docs/DEMO.md](docs/DEMO.md), part 1.
 
 ## Data Model
 
@@ -81,29 +107,39 @@ trigger or Flow. More detail: [docs/architecture.md](docs/architecture.md).
 | `MedicalReportProcessor` | Parses the response, applies safe defaults, maps urgency to status, updates the report and creates an appointment for High urgency after checking for an existing one. |
 | `ReportAnalysisResponse` | Wrapper class for JSON deserialization. |
 | `GeminiMockResponse` | `HttpCalloutMock` used by the tests. |
+| `AgentReportIntake` | Chat agent action: validates the patient's details, reads the uploaded PDF, calls Gemini, creates the patient and report records and links the file. |
+| `AgentSafetyCheck` | Chat agent action: flags self-harm and medical-emergency messages before the model replies. |
 
 ## Security
 
 - The Gemini API key is stored in an encrypted **External Credential** principal parameter
   and added to requests as the `x-goog-api-key` header through a `$Credential` formula.
 - The key is not in Apex code, metadata or this repository.
+- The chat agent runs as a dedicated agent user with only the permissions it needs, and
+  treats uploaded PDFs as data, not instructions.
 
 ## Testing
 
-10 Apex unit tests, all passing, with mocked HTTP callouts (no real API calls):
+27 Apex unit tests, all passing, with mocked HTTP callouts (no real API calls):
 
 | Class | Coverage |
 |---|---|
 | `GeminiService` | 100% |
-| `MedicalReportProcessor` | 98% |
+| `MedicalReportProcessor` | 99% |
+| `AgentReportIntake` | 98% |
+| `AgentSafetyCheck` | 100% |
 
 The tests cover the request configuration, API errors, High urgency with appointment
-creation, duplicate prevention, Moderate and Low urgency without appointments, and
-default values for incomplete AI responses.
+creation, duplicate prevention, Moderate and Low urgency without appointments, default
+values for incomplete AI responses, and for the chat agent: PDF lookup, file type and
+size checks, invalid details, and failures that must leave no partial records.
 
 ```bash
-sf apex run test --class-names GeminiServiceTest --class-names MedicalReportProcessorTest --code-coverage --result-format human --target-org <alias>
+sf apex run test --class-names GeminiServiceTest --class-names MedicalReportProcessorTest --class-names AgentReportIntakeTest --class-names AgentSafetyCheckTest --code-coverage --result-format human --target-org <alias>
 ```
+
+The chat agent also has an agent test suite and an end-to-end chat test
+(see [docs/agent.md](docs/agent.md#testing)).
 
 ## Reports, Dashboard and List Views
 
@@ -117,11 +153,12 @@ sf apex run test --class-names GeminiServiceTest --class-names MedicalReportProc
 See **[docs/RECOVERY.md](docs/RECOVERY.md)** for step-by-step deployment to a new org. In short:
 
 1. Authorize an org: `sf org login web --alias ai-patient-org --set-default`
-2. Deploy: `sf project deploy start --manifest manifest/project-package.xml --test-level RunSpecifiedTests --tests GeminiServiceTest --tests MedicalReportProcessorTest`
+2. Deploy: `sf project deploy start --manifest manifest/project-package.xml --test-level RunSpecifiedTests --tests GeminiServiceTest --tests MedicalReportProcessorTest --tests AgentReportIntakeTest --tests AgentSafetyCheckTest`
 3. Assign access: `sf org assign permset --name AI_Patient_Support_Access`
 4. Add the Gemini API key to the `Gemini_External_Credential` principal (Setup only).
 5. Create demo data: `sf apex run --file scripts/apex/create-demo-data.apex`
 6. Analyze a report: `sf apex run --file scripts/apex/analyze-report.apex`
+7. Optional: set up the chat agent and demo website (RECOVERY.md, step 8).
 
 ## Challenges and Solutions
 
@@ -134,16 +171,24 @@ See **[docs/RECOVERY.md](docs/RECOVERY.md)** for step-by-step deployment to a ne
 | API errors surfaced as null pointer exceptions. | Check the HTTP status and raise `GeminiApiException` with Gemini's error message. |
 | The API key was stored as plain text in credential metadata. | Moved it to an encrypted External Credential principal parameter. |
 | Retrieving the whole org pulled in unrelated standard metadata. | Removed it from the repository and added a project-only deployment manifest (`manifest/project-package.xml`). |
+| Agentforce's built-in file handling could not process uploaded PDFs. | Turned it off, let the chat channel store the file on the messaging session, and read the newest PDF from the session in Apex. |
+| The agent's Gemini callout failed with a permissions error. | Gave the agent user read access to `UserExternalCredential` through the permission set. |
+| The router model sometimes skipped steps or misread short replies such as "no". | Moved flow control into deterministic script logic and wrote the model's instructions as goals and limits. |
+| The website chat window showed an error or stayed on "Reconnecting…". | Turned off the channel's fallback message, allowed the website through CORS and trusted framing domains, and used the 15-character org ID in the embed code. |
 
 ## Limitations
 
-- Analysis is started manually; only one report can be analyzed per transaction because
-  Salesforce does not allow a callout after DML in the same transaction.
+- In the original workflow, analysis is started manually; only one report can be analyzed
+  per transaction because Salesforce does not allow a callout after DML in the same
+  transaction.
 - The Gemini free tier has a small daily request quota.
 - AI output can still vary for borderline reports; it is guidance, not a diagnosis.
 - The prompt has no explicit "do not diagnose" instruction, so summaries may mention
   possible conditions. Adding that instruction was tested and reverted because reports
   expected to be Low were classified as Moderate.
+- Chat agent: Salesforce's built-in safety layer answers some self-harm messages with a
+  generic refusal before the agent's logic runs, so the welcome message always includes
+  crisis-helpline guidance. PDFs must be under 2 MB. See [docs/agent.md](docs/agent.md#known-limitations).
 
 ## Future Enhancements
 
@@ -151,7 +196,6 @@ See **[docs/RECOVERY.md](docs/RECOVERY.md)** for step-by-step deployment to a ne
   a report is saved.
 - Lightning Web Component for patients to view their simplified report.
 - Email notifications for high-urgency cases.
-- File upload for PDF reports.
 - Electronic Health Record (EHR) integration.
 
 ## Project Structure
@@ -164,11 +208,21 @@ ai-patient-support-agentforce
 │   ├── namedCredentials/   # Gemini_API
 │   ├── externalCredentials/# Gemini_External_Credential (no secrets)
 │   ├── permissionsets/     # AI_Patient_Support_Access
+│   ├── aiAuthoringBundles/ # AI_Patient_Support_Agent (Agent Script)
+│   ├── aiEvaluationDefinitions/ # Agent test suite
+│   ├── flows/  queues/  queueRoutingConfigs/ # Chat routing
 │   ├── reports/  dashboards/  reportTypes/
 │   └── layouts/  tabs/
-├── manifest/project-package.xml   # Project-only deployment manifest
-├── scripts/apex/           # Demo data and analysis scripts
-├── docs/                   # Architecture, AI contract, triage rules, recovery guide, demo script
+├── manifest/
+│   ├── project-package.xml        # Project-only deployment manifest
+│   └── agent-routing-package.xml  # Chat routing (deployed after agent setup)
+├── scripts/
+│   ├── apex/               # Demo data and analysis scripts
+│   ├── demo-reports/       # Fictional sample PDF reports
+│   ├── chat-test-page/     # Local demo website with the chat window
+│   └── agent-tests/        # End-to-end chat test
+├── specs/                  # Agent test suite specification
+├── docs/                   # Architecture, agent design, AI contract, triage rules, recovery guide, demo script
 ├── screenshots/
 └── sfdx-project.json
 ```
@@ -202,6 +256,14 @@ ai-patient-support-agentforce
 ### Apex Test Results
 
 ![Test Results](screenshots/apex-test-results.png)
+
+### Patient Chat: Collecting Details
+
+![Agent chat collecting details](screenshots/agent-chat-details.png)
+
+### Patient Chat: Report Summary
+
+![Agent chat report summary](screenshots/agent-chat-summary.png)
 
 ## Author
 

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Patient Support Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 48px 16px;
+        }
+        h1 { font-size: 28px; margin-bottom: 8px; }
+        p { line-height: 1.6; }
+        .note {
+            background: #fff7e6;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Patient Support Demo</h1>
+        <p>Use the chat button in the bottom-right corner to talk to the AI Patient Support assistant.
+           It asks for a few basic details, then you upload your medical report as a PDF and it explains
+           the report in simple language.</p>
+        <p class="note">Demo only: use fictional details and the sample reports in
+           <code>scripts/demo-reports</code>. Never use real patient information.</p>
+    </main>
+
+    <!-- Enhanced Chat embed code for the Patient_Support_Chat deployment.
+         These values are public identifiers, not credentials.
+         The org ID must be the 15-character form: the chat service compares
+         it with the ID inside its token, and the 18-character form fails. -->
+    <script type="text/javascript">
+        function initEmbeddedMessaging() {
+            try {
+                embeddedservice_bootstrap.settings.language = 'en_US';
+                embeddedservice_bootstrap.init(
+                    '00Dbm000016mkJ9',
+                    'Patient_Support_Chat',
+                    'https://orgfarm-7650687310-dev-ed.develop.my.site.com/ESWPatientSuppor1793798749520',
+                    { scrt2URL: 'https://orgfarm-7650687310-dev-ed.develop.my.salesforce-scrt.com' }
+                );
+            } catch (err) {
+                console.error('Error loading Embedded Messaging: ', err);
+            }
+        }
+    </script>
+    <script type="text/javascript"
+        src="https://orgfarm-7650687310-dev-ed.develop.my.site.com/ESWPatientSuppor1793798749520/assets/js/bootstrap.min.js"
+        onload="initEmbeddedMessaging()"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>Patient_Support_Routing</members>
+        <name>QueueRoutingConfig</name>
+    </types>
+    <types>
+        <members>Patient_Support_Messaging</members>
+        <name>Queue</name>
+    </types>
+    <types>
+        <members>Route_Messaging_To_Patient_Agent</members>
+        <name>Flow</name>
+    </types>
+    <version>66.0</version>
+</Package>

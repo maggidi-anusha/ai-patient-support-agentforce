@@ -55,6 +55,35 @@ private class GeminiServiceTest {
     }
 
     @IsTest
+    static void testAnalyzeReportPdfSendsFile() {
+
+        RequestCaptureMock mock = new RequestCaptureMock();
+        Test.setMock(HttpCalloutMock.class, mock);
+
+        Test.startTest();
+        String response = GeminiService.analyzeReportPdf('JVBERi0xLjQ=');
+        Test.stopTest();
+
+        System.assert(response.contains('summary'));
+
+        Map<String, Object> body =
+            (Map<String, Object>) JSON.deserializeUntyped(mock.requestBody);
+        Map<String, Object> content =
+            (Map<String, Object>) ((List<Object>) body.get('contents'))[0];
+        List<Object> parts = (List<Object>) content.get('parts');
+
+        System.assert(
+            ((String) ((Map<String, Object>) parts[0]).get('text')).contains('mild deficiencies')
+        );
+
+        Map<String, Object> inlineData =
+            (Map<String, Object>) ((Map<String, Object>) parts[1]).get('inline_data');
+        System.assertEquals('application/pdf', inlineData.get('mime_type'));
+        System.assertEquals('JVBERi0xLjQ=', inlineData.get('data'));
+
+    }
+
+    @IsTest
     static void testApiErrorThrowsException() {
 
         Test.setMock(HttpCalloutMock.class, new ErrorMock());
