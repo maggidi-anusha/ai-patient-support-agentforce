@@ -61,17 +61,5 @@
         <members>AIPatientSupportDashboards/FyyDBhRNiwoLmQemmEDaQZqjjWzvfo</members>
         <name>Dashboard</name>
     </types>
-    <types>
-        <members>Patient_Support_Routing</members>
-        <name>QueueRoutingConfig</name>
-    </types>
-    <types>
-        <members>Patient_Support_Messaging</members>
-        <name>Queue</name>
-    </types>
-    <types>
-        <members>Route_Messaging_To_Patient_Agent</members>
-        <name>Flow</name>
-    </types>
     <version>66.0</version>
 </Package>
