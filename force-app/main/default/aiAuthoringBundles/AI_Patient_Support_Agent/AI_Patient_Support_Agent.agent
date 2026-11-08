@@ -46,6 +46,8 @@ variables:
         description: "Medical disclaimer"
     appointment_created: mutable boolean = False
         description: "True if an appointment request was created"
+    crisis_detected: mutable boolean = False
+        description: "True if the latest message mentions self-harm, suicide or a medical emergency"
     report_submitted: mutable boolean = False
         description: "True after this conversation's report has been analyzed and saved"
     patient_name: mutable string
@@ -74,7 +76,23 @@ start_agent agent_router:
     model_config:
         model: "model://sfdc_ai__DefaultGPT41"
 
+    actions:
+        check_safety:
+            description: "Checks whether the user's message mentions self-harm, suicide or a medical emergency."
+            inputs:
+                text: string
+                    description: "The user's latest message"
+            outputs:
+                isCrisis: boolean
+                    description: "True if the message needs the urgent-help reply"
+            target: "apex://AgentSafetyCheck"
+
     before_reasoning:
+        run @actions.check_safety
+            with text=@system_variables.user_input
+            set @variables.crisis_detected = @outputs.isCrisis
+        if @variables.crisis_detected == True:
+            transition to @subagent.urgent_help
         if len(@system_variables.uploaded_files) > 0:
             transition to @subagent.report_intake
 
@@ -98,6 +116,15 @@ subagent report_intake:
         model: "model://sfdc_ai__DefaultGPT41"
 
     actions:
+        check_safety:
+            description: "Checks whether the user's message mentions self-harm, suicide or a medical emergency."
+            inputs:
+                text: string
+                    description: "The user's latest message"
+            outputs:
+                isCrisis: boolean
+                    description: "True if the message needs the urgent-help reply"
+            target: "apex://AgentSafetyCheck"
         submit_patient_report:
             description: "Creates the patient and medical report from the uploaded PDF, analyzes it, and returns the result."
             inputs:
@@ -141,6 +168,11 @@ subagent report_intake:
             target: "apex://AgentReportIntake"
 
     before_reasoning:
+        run @actions.check_safety
+            with text=@system_variables.user_input
+            set @variables.crisis_detected = @outputs.isCrisis
+        if @variables.crisis_detected == True:
+            transition to @subagent.urgent_help
         if len(@system_variables.uploaded_files) > 0 and @variables.report_submitted == False and @variables.patient_phone is not None and @variables.last_file_id != @system_variables.uploaded_files[-1].id:
             set @variables.last_file_id = @system_variables.uploaded_files[-1].id
             run @actions.submit_patient_report
@@ -162,7 +194,7 @@ subagent report_intake:
 
     reasoning:
         instructions: ->
-            | If the patient describes symptoms, a possible emergency, or thoughts of self-harm or suicide, use go_to_urgent_help immediately and do not reply yourself.
+            | If the patient's latest message describes symptoms or a possible emergency, use go_to_urgent_help instead of continuing.
               Never ask for a file or mention uploading unless the instructions below say all details are collected.
               If the patient greets you with hi, hello or similar, greet them back warmly and say in one sentence that you can explain a PDF medical report in simple language.
               If the patient asks what you can do, say that you collect their basic details, read a PDF medical report, and explain it with an urgency level, a suggested next step and a disclaimer, and that you can't diagnose or replace a doctor.

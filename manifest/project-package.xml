@@ -29,6 +29,8 @@
     <types>
         <members>AgentReportIntake</members>
         <members>AgentReportIntakeTest</members>
+        <members>AgentSafetyCheck</members>
+        <members>AgentSafetyCheckTest</members>
         <members>ReportAnalysisResponse</members>
         <members>GeminiService</members>
         <members>MedicalReportProcessor</members>
