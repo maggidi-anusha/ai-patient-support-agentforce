@@ -1,7 +1,7 @@
 """End-to-end test of the AI Patient Support Agent through its Enhanced Chat channel.
 
 Starts an anonymous chat, answers the agent's questions with fictional details,
-uploads a fictional PDF report, and prints the agent's replies.
+uploads a fictional PDF report, types "done", and prints the agent's replies.
 
 Usage:
   python3 scripts/agent-tests/chat_upload_test.py <org_id> <scrt_url> <deployment_api_name> <origin> <pdf_path>
@@ -71,13 +71,13 @@ def agent_replies(wait_seconds):
     return replies
 
 
-def say(text):
+def say(text, wait_seconds=40):
     status, _ = call('/iamessage/api/v2/conversation/%s/message' % conversation_id, {
         'message': {'id': str(uuid.uuid4()), 'messageType': 'StaticContentMessage',
                     'staticContent': {'formatType': 'Text', 'text': text}},
         'esDeveloperName': DEPLOYMENT, 'isNewMessagingSession': False, 'language': 'en_US'}, token)
     print('\n>>> USER:', text, '(HTTP %s)' % status, flush=True)
-    for reply in agent_replies(40):
+    for reply in agent_replies(wait_seconds):
         print('AGENT:', reply, flush=True)
 
 
@@ -96,5 +96,6 @@ body = (f'--{boundary}\r\nContent-Disposition: form-data; name="messageEntry"\r\
 status, _ = call('/iamessage/api/v2/conversation/%s/file' % conversation_id, raw=body, token=token,
                  content_type='multipart/form-data; boundary=' + boundary)
 print('\n>>> USER: [uploads %s] (HTTP %s)' % (file_name, status), flush=True)
-for reply in agent_replies(90):
+for reply in agent_replies(15):
     print('AGENT:', reply, flush=True)
+say('done', wait_seconds=90)

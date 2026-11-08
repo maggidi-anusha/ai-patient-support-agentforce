@@ -31,8 +31,11 @@ public with sharing class AgentReportIntake {
         @InvocableVariable(label='Phone' description='Phone number of the patient' required=true)
         public String phone;
 
-        @InvocableVariable(label='File Id' description='Id of the PDF report uploaded in this conversation' required=true)
+        @InvocableVariable(label='File Id' description='Id of the PDF report uploaded in this conversation')
         public String fileId;
+
+        @InvocableVariable(label='Session Id' description='Id of the messaging session; the newest PDF attached to it is used when no File Id is given')
+        public String sessionId;
 
         @InvocableVariable(label='File Name' description='Name of the uploaded file')
         public String fileName;
@@ -202,6 +205,13 @@ public with sharing class AgentReportIntake {
                 WHERE ContentDocumentId = :fileId AND IsLatest = true
                 LIMIT 1
             ];
+        } else if (String.isBlank(fileId) && String.isNotBlank(request.sessionId)) {
+            files = new SessionFiles().latestPdf(request.sessionId);
+            if (files.isEmpty()) {
+                throw new IntakeException(
+                    'I can\'t see a PDF in this chat yet. Please upload your report using the attachment button, then type done.'
+                );
+            }
         } else {
             files = new List<ContentVersion>();
         }
@@ -223,9 +233,7 @@ public with sharing class AgentReportIntake {
 
     private static String readPdf(ContentVersion file) {
 
-        String base64Pdf = EncodingUtil.base64Encode(
-            [SELECT VersionData FROM ContentVersion WHERE Id = :file.Id].VersionData
-        );
+        String base64Pdf = EncodingUtil.base64Encode(new SessionFiles().content(file.Id));
 
         if (!base64Pdf.startsWith(PDF_BASE64_PREFIX)) {
             throw new IntakeException('Please upload your report as a PDF file.');
@@ -237,14 +245,47 @@ public with sharing class AgentReportIntake {
         // The analysis is already saved, so failing to attach the file
         // should not lose the patient's summary
         try {
+            new SessionFiles().link(contentDocumentId, reportId);
+        } catch (DmlException ex) {
+            System.debug(LoggingLevel.ERROR, 'AGENT_INTAKE_LINK_ERROR ' + ex.getMessage());
+        }
+    }
+
+    // Agent users can't see files attached to a messaging session through normal
+    // sharing. This helper reads only the file it is given, or the newest PDF on
+    // the session whose Id comes from the agent runtime, never from user input.
+    private without sharing class SessionFiles {
+
+        List<ContentVersion> latestPdf(String sessionId) {
+            Set<Id> documentIds = new Set<Id>();
+            for (ContentDocumentLink link : [
+                SELECT ContentDocumentId FROM ContentDocumentLink
+                WHERE LinkedEntityId = :sessionId
+            ]) {
+                documentIds.add(link.ContentDocumentId);
+            }
+            return [
+                SELECT Title, ContentDocumentId, ContentSize, FileExtension
+                FROM ContentVersion
+                WHERE ContentDocumentId IN :documentIds
+                    AND IsLatest = true
+                    AND FileExtension = 'pdf'
+                ORDER BY CreatedDate DESC
+                LIMIT 1
+            ];
+        }
+
+        Blob content(Id versionId) {
+            return [SELECT VersionData FROM ContentVersion WHERE Id = :versionId].VersionData;
+        }
+
+        void link(Id contentDocumentId, Id reportId) {
             insert new ContentDocumentLink(
                 ContentDocumentId = contentDocumentId,
                 LinkedEntityId = reportId,
                 ShareType = 'V',
                 Visibility = 'AllUsers'
             );
-        } catch (DmlException ex) {
-            System.debug(LoggingLevel.ERROR, 'AGENT_INTAKE_LINK_ERROR ' + ex.getMessage());
         }
     }
 

@@ -78,6 +78,50 @@ private class AgentReportIntakeTest {
     }
 
     @IsTest
+    static void testNewestPdfOnSessionIsUsed() {
+
+        // Any record can stand in for the messaging session the file is attached to
+        Patient__c session = new Patient__c(Name = 'Session Stand-in');
+        insert session;
+        ContentVersion file = createFile(Blob.valueOf('%PDF-1.4 sample'));
+        insert new ContentDocumentLink(
+            ContentDocumentId = file.ContentDocumentId,
+            LinkedEntityId = session.Id,
+            ShareType = 'V'
+        );
+        Test.setMock(HttpCalloutMock.class, new GeminiMock(200, geminiBody('High')));
+
+        AgentReportIntake.Request input = request(null);
+        input.sessionId = session.Id;
+
+        Test.startTest();
+        AgentReportIntake.Result result = submit(input);
+        Test.stopTest();
+
+        System.assertEquals(true, result.success, 'Message: ' + result.message);
+        System.assertEquals('High', result.urgency);
+        System.assertEquals(true, result.appointmentCreated);
+    }
+
+    @IsTest
+    static void testSessionWithoutPdfAsksForUpload() {
+
+        Patient__c session = new Patient__c(Name = 'Session Stand-in');
+        insert session;
+
+        AgentReportIntake.Request input = request(null);
+        input.sessionId = session.Id;
+
+        Test.startTest();
+        AgentReportIntake.Result result = submit(input);
+        Test.stopTest();
+
+        System.assertEquals(false, result.success);
+        System.assert(result.message.contains('upload your report'), result.message);
+        System.assertEquals(0, [SELECT COUNT() FROM Medical_Report__c]);
+    }
+
+    @IsTest
     static void testNonPdfFileIsRejected() {
 
         ContentVersion file = createFile(Blob.valueOf('this is not a pdf'));

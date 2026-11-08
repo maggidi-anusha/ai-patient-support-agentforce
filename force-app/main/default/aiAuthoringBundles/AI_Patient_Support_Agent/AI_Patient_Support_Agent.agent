@@ -14,7 +14,7 @@ config:
         streaming: False
         reset_to_initial_node: True
     file_upload:
-        mode: "managed"
+        mode: "disabled"
         message: "Sorry, I couldn't receive that file. Please try uploading your PDF report again."
 
 variables:
@@ -48,6 +48,8 @@ variables:
         description: "True if an appointment request was created"
     crisis_detected: mutable boolean = False
         description: "True if the latest message mentions self-harm, suicide or a medical emergency"
+    upload_requested: mutable boolean = False
+        description: "True once the patient has been asked to upload their PDF"
     report_submitted: mutable boolean = False
         description: "True after this conversation's report has been analyzed and saved"
     patient_name: mutable string
@@ -60,6 +62,9 @@ variables:
         description: "Email address given by the patient"
     patient_phone: mutable string
         description: "Phone number given by the patient"
+
+model_config:
+    model: "model://sfdc_ai__DefaultGPT41"
 
 connection messaging:
     adaptive_response_allowed: True
@@ -145,7 +150,8 @@ subagent report_intake:
                     is_required: True
                 fileId: string
                     description: "Id of the uploaded PDF"
-                    is_required: True
+                sessionId: string
+                    description: "Id of the messaging session that holds the uploaded PDF"
                 fileName: string
                     description: "Name of the uploaded PDF"
                 mimeType: string
@@ -173,17 +179,14 @@ subagent report_intake:
             set @variables.crisis_detected = @outputs.isCrisis
         if @variables.crisis_detected == True:
             transition to @subagent.urgent_help
-        if len(@system_variables.uploaded_files) > 0 and @variables.report_submitted == False and @variables.patient_phone is not None and @variables.last_file_id != @system_variables.uploaded_files[-1].id:
-            set @variables.last_file_id = @system_variables.uploaded_files[-1].id
+        if @variables.report_submitted == False and @variables.patient_phone is not None and @variables.RoutableId is not None and @variables.upload_requested == True:
             run @actions.submit_patient_report
                 with patientName=@variables.patient_name
                 with age=@variables.patient_age
                 with gender=@variables.patient_gender
                 with email=@variables.patient_email
                 with phone=@variables.patient_phone
-                with fileId=@system_variables.uploaded_files[-1].id
-                with fileName=@system_variables.uploaded_files[-1].name
-                with mimeType=@system_variables.uploaded_files[-1].mime_type
+                with sessionId=@variables.RoutableId
                 set @variables.report_submitted = @outputs.success
                 set @variables.analysis_message = @outputs.message
                 set @variables.analysis_summary = @outputs.summary
@@ -191,6 +194,10 @@ subagent report_intake:
                 set @variables.analysis_action = @outputs.suggestedAction
                 set @variables.analysis_disclaimer = @outputs.disclaimer
                 set @variables.appointment_created = @outputs.appointmentCreated
+
+    after_reasoning:
+        if @variables.patient_phone is not None:
+            set @variables.upload_requested = True
 
     reasoning:
         instructions: ->
@@ -217,7 +224,7 @@ subagent report_intake:
                 instructions: "Please ask for the patient's phone number."
 
             if @variables.patient_phone is not None and @variables.report_submitted == False:
-                | All details are collected. Ask the patient to upload their medical report as a PDF using the attachment button, and remind them not to use real medical information in this demo. Never claim to have read a report yourself.
+                | All details are collected. Ask the patient to upload their medical report as a PDF using the attachment button and then type done. Remind them not to use real medical information in this demo. Never claim to have read a report yourself.
             if @variables.analysis_message != "" and @variables.report_submitted == False:
                 | The last upload could not be processed. Tell the patient this, word for word: {!@variables.analysis_message}
             if @variables.report_submitted == True:
